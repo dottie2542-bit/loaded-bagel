@@ -2,61 +2,102 @@ import json
 import os
 import sys
 
-# 1. Setup the file
 DATA_FILE = 'tasks.json'
 
 def load_tasks():
     if not os.path.exists(DATA_FILE):
         return []
-    with open(DATA_FILE, 'r') as f:
-        return json.load(f)
+    try:
+        with open(DATA_FILE, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return []
 
 def save_tasks(tasks):
     with open(DATA_FILE, 'w') as f:
         json.dump(tasks, f, indent=4)
 
-# 2. The Command Logic
 def main():
-    # Check if you typed anything at all
     if len(sys.argv) < 2:
-        print("Usage: python task_cli.py [add|list|update|delete]")
+        print("Usage: python task_cli.py [add|list|update|delete|done]")
         return
 
-    command = sys.argv[1]
+    command = sys.argv[1].lower()
     tasks = load_tasks()
 
+    # --- ADD COMMAND ---
     if command == "add":
-        # python task_cli.py add "Task name"
+        if len(sys.argv) < 3:
+            print("Error: Please provide a task description.")
+            return
+        
         description = sys.argv[2]
-        new_id = len(tasks) + 1
+        # Fixed ID logic: finds the highest current ID and adds 1
+        new_id = max([t['id'] for t in tasks], default=0) + 1
+        
         tasks.append({"id": new_id, "description": description, "status": "todo"})
         save_tasks(tasks)
         print(f"Success: Added task {new_id}")
 
+    # --- LIST COMMAND ---
     elif command == "list":
-        # python task_cli.py list
         if not tasks:
             print("The list is empty.")
+            return
         for t in tasks:
             print(f"ID: {t['id']} | {t['description']} [{t['status']}]")
 
+    # --- DELETE COMMAND ---
     elif command == "delete":
-        # python task_cli.py delete 1
-        task_id = int(sys.argv[2])
-        tasks = [t for t in tasks if t['id'] != task_id]
-        save_tasks(tasks)
-        print(f"Success: Deleted task {task_id}")
+        try:
+            task_id = int(sys.argv[2])
+            original_count = len(tasks)
+            tasks = [t for t in tasks if t['id'] != task_id]
+            
+            if len(tasks) == original_count:
+                print(f"Error: Task {task_id} not found.")
+            else:
+                save_tasks(tasks)
+                print(f"Success: Deleted task {task_id}")
+        except (IndexError, ValueError):
+            print("Error: Please provide a valid numeric ID to delete.")
 
+    # --- UPDATE COMMAND ---
     elif command == "update":
-        # python task_cli.py update 1 "New Name"
-        task_id = int(sys.argv[2])
-        new_desc = sys.argv[3]
-        for t in tasks:
-            if t['id'] == task_id:
-                t['description'] = new_desc
-        save_tasks(tasks)
-        print(f"Success: Updated task {task_id}")
+        try:
+            task_id = int(sys.argv[2])
+            new_desc = sys.argv[3]
+            found = False
+            for t in tasks:
+                if t['id'] == task_id:
+                    t['description'] = new_desc
+                    found = True
+                    break # Efficiency: stop looking once found
+            
+            if found:
+                save_tasks(tasks)
+                print(f"Success: Updated task {task_id}")
+            else:
+                print(f"Error: Task {task_id} not found.")
+        except (IndexError, ValueError):
+            print("Error: Usage: python task_cli.py update [id] [new description]")
 
-# 3. Start the program
+    # --- NEW: MARK AS DONE ---
+    elif command == "done":
+        try:
+            task_id = int(sys.argv[2])
+            for t in tasks:
+                if t['id'] == task_id:
+                    t['status'] = "done"
+                    save_tasks(tasks)
+                    print(f"Success: Task {task_id} marked as done.")
+                    return
+            print(f"Error: Task {task_id} not found.")
+        except (IndexError, ValueError):
+            print("Error: Please provide a valid numeric ID.")
+
+    else:
+        print(f"Unknown command: {command}")
+
 if __name__ == "__main__":
     main()
