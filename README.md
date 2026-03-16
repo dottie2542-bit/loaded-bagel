@@ -2,7 +2,7 @@
 
 ### Very simple code I created in order to practice. You can use it in VScode!
 
-> MAKE SURE YOU have PYTHON INSTALLED AS WELL
+> MAKE SURE YOU HAVE PYTHON INSTALLED AS WELL
 ##
 <p>To use it, you have to create a folder in your File Explorer. Call it "my_task_tracker".</p>
 <p>You should then open up VScode and press "Open Folder".</p>
